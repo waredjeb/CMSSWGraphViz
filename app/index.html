@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMSSW Module Dependency Graph</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header Controls -->
+        <div id="controls">
+            <div class="controls-section">
+                <h1>CMSSW Module Dependency Graph</h1>
+            </div>
+
+            <div class="controls-section">
+                <div class="control-group">
+                    <label for="search-input">Search:</label>
+                    <input type="text" id="search-input" placeholder="Enter module name..." />
+                    <button id="search-btn">Find</button>
+                    <button id="search-clear-btn">Clear</button>
+                </div>
+
+                <div class="control-group">
+                    <label for="ego-radius">Focus Radius:</label>
+                    <input type="number" id="ego-radius" min="1" max="5" value="1" />
+                    <button id="ego-apply-btn">Apply</button>
+                    <button id="ego-reset-btn">Reset View</button>
+                </div>
+
+                <div class="control-group" id="dependency-controls">
+                    <label>📊 Dependencies:</label>
+                    <span id="selected-module-name" style="color: #ecf0f1; font-weight: 600;">None selected</span>
+                    <label for="dep-depth">Depth:</label>
+                    <input type="number" id="dep-depth" min="1" max="10" value="2" style="width: 60px;" />
+                    <button id="dep-show-btn">Show Dependencies</button>
+                    <button id="dep-upstream-btn">Upstream Only</button>
+                    <button id="dep-downstream-btn">Downstream Only</button>
+                </div>
+            </div>
+
+            <div class="controls-section" id="filter-controls-wrapper">
+                <div class="control-group" id="filter-controls">
+                    <label>🔍 Filters:</label>
+
+                    <div class="filter-category">
+                        <strong>Stage:</strong>
+                        <label><input type="checkbox" id="filter-reco" checked> Reco</label>
+                        <label><input type="checkbox" id="filter-analysis" checked> Analysis</label>
+                    </div>
+
+                    <div class="filter-category">
+                        <strong>Specific:</strong>
+                        <label><input type="checkbox" id="filter-pat" checked> PAT</label>
+                        <label><input type="checkbox" id="filter-hlt" checked> HLT</label>
+                    </div>
+
+                    <div class="filter-category">
+                        <strong>Type:</strong>
+                        <label><input type="checkbox" id="filter-producer" checked> Producer</label>
+                        <label><input type="checkbox" id="filter-filter" checked> Filter</label>
+                        <label><input type="checkbox" id="filter-analyzer" checked> Analyzer</label>
+                    </div>
+
+                    <button id="filter-select-all" class="filter-btn">All</button>
+                    <button id="filter-deselect-all" class="filter-btn">None</button>
+                    <span id="filter-stats" class="filter-stats">Showing all nodes</span>
+                </div>
+            </div>
+
+            <div class="controls-section" id="stats">
+                <span id="node-count">Nodes: -</span>
+                <span id="edge-count">Edges: -</span>
+                <span id="module-count">Modules: -</span>
+                <button id="upload-btn" style="margin-left: 20px;">📁 Upload Files</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <!-- Graph Container -->
+            <div id="graph-container">
+                <div id="cy"></div>
+                <div id="loading">Loading graph data...</div>
+
+                <!-- Legend -->
+                <div id="legend">
+                    <div class="legend-title">Workflow Stage</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2ecc71;"></div>
+                        <span>Green: Reconstruction (631, 48%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d3d3d3;"></div>
+                        <span>Gray: Analysis/PAT (684, 52%)</span>
+                    </div>
+                    <div class="legend-note" style="font-size: 11px; margin-top: 8px;">
+                        Most modules are EDProducers.<br>
+                        Use filters above to show/hide categories.
+                    </div>
+                    <div class="legend-note">
+                        ⌨️ <strong>Keyboard:</strong><br>
+                        • ↑↓←→ Navigate | Enter: Details<br>
+                        • Tab: Cycle | Esc: Close | R: Reset<br>
+                        • ? for help
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div id="side-panel" class="hidden">
+                <div id="panel-resize-handle"></div>
+                <div id="panel-header">
+                    <div id="breadcrumbs"></div>
+                    <button id="panel-close-btn">&times;</button>
+                </div>
+
+                <div id="panel-content">
+                    <div id="module-info">
+                        <h2 id="module-name">Module Name</h2>
+                        <div class="info-section">
+                            <strong>Type:</strong> <span id="module-type">-</span>
+                        </div>
+                        <div class="info-section">
+                            <strong>Plugin:</strong> <span id="module-plugin">-</span>
+                        </div>
+                    </div>
+
+                    <div id="input-tags-section" class="section">
+                        <h3>Input Tags</h3>
+                        <div id="input-tags-list"></div>
+                    </div>
+
+                    <div id="parameters-section" class="section">
+                        <h3>Parameters</h3>
+                        <div id="parameters-list"></div>
+                    </div>
+
+                    <div id="raw-snippet-section" class="section">
+                        <h3>Raw Configuration</h3>
+                        <pre id="raw-snippet"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Input Files</h2>
+                <button id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Upload new dependency.gv and dumpConfig.py files to regenerate the bundle.</p>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label for="dot-file-input">Dependency Graph (dependency.gv):</label>
+                        <input type="file" id="dot-file-input" accept=".gv,.dot" required>
+                        <span class="file-info" id="dot-file-info">No file selected</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="config-file-input">CMSSW Config (dumpConfig.py):</label>
+                        <input type="file" id="config-file-input" accept=".py" required>
+                        <span class="file-info" id="config-file-info">No file selected</span>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" id="upload-submit-btn">Upload & Regenerate</button>
+                        <button type="button" id="upload-cancel-btn">Cancel</button>
+                    </div>
+                    <div id="upload-progress" class="hidden">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <p id="upload-status">Uploading files...</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/panel.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/ego.js"></script>
+    <script src="js/dependency.js"></script>
+    <script src="js/keyboard.js"></script>
+    <script src="js/filter.js"></script>
+    <script src="js/upload.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
