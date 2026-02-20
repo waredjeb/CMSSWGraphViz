@@ -23,28 +23,99 @@ This tool combines graph topology from Graphviz DOT files with detailed module c
 
 ## Prerequisites
 
-- **Python 3.6+** with pip
-- **Input files:**
-  - `dependency.gv` - Graphviz DOT file with module dependencies
-  - `dumpConfig.py` - CMSSW configuration dump
+### Required Software
+
+- **Python 3.6 or higher**
+  - Check version: `python3 --version`
+  - Install if needed:
+    - Ubuntu/Debian: `sudo apt install python3 python3-pip python3-venv`
+    - CentOS/RHEL: `sudo yum install python3 python3-pip`
+    - macOS: `brew install python3`
+
+- **pip** (Python package installer)
+  - Usually comes with Python 3.6+
+  - Check: `pip --version` or `pip3 --version`
+
+- **graphviz** (system package for pydot)
+  - Ubuntu/Debian: `sudo apt install graphviz`
+  - CentOS/RHEL: `sudo yum install graphviz`
+  - macOS: `brew install graphviz`
+
+### Python Dependencies (auto-installed by run.sh)
+
+- `pydot>=1.4.2` - Graphviz DOT file parsing
+- `networkx>=2.5` - Graph data structures and algorithms
+
+These are automatically installed when you run `./run.sh` for the first time.
+
+### Input Files (Required for First Run)
+
+Place these files in the project root directory:
+
+- **`dependency.gv`** - Graphviz DOT file with module dependencies
+  - Format: Graphviz digraph or graph
+  - Nodes should have `label` attribute matching module names
+
+- **`dumpConfig.py`** - CMSSW configuration dump
+  - Generate with: `cmsRun yourconfig.py --dump > dumpConfig.py`
+  - Contains full module definitions with parameters
+
+**Note:** If you already have `data/bundle.json`, these files are optional (the app will use the existing bundle).
 
 ## Quick Start
 
+### One-Command Setup
+
 ```bash
-# Clone or navigate to the project directory
+# Navigate to the project directory
 cd /path/to/CMSSWGraph
 
-# Run the application (handles setup automatically)
+# Make the script executable (first time only)
+chmod +x run.sh
+
+# Run the application (handles everything automatically)
 ./run.sh
 ```
 
-The script will:
-1. Create a virtual environment (if needed)
-2. Install dependencies (if needed)
-3. Generate the data bundle (if needed)
-4. Start the web server
+### What run.sh Does
+
+The script automatically handles the complete setup:
+
+1. ✅ **Creates virtual environment** (if `venv/` doesn't exist)
+   - Creates an isolated Python environment
+
+2. ✅ **Activates virtual environment**
+   - Ensures packages are installed in the project venv
+
+3. ✅ **Installs Python dependencies** (if not already installed)
+   - Checks for `pydot` and `networkx`
+   - Runs `pip install -r preprocess/requirements.txt` if needed
+
+4. ✅ **Generates data bundle** (if `data/bundle.json` doesn't exist)
+   - Runs `python preprocess/build_bundle.py`
+   - Parses `dependency.gv` and `dumpConfig.py`
+   - Creates `data/bundle.json` (~22 MB)
+
+5. ✅ **Starts web server**
+   - Runs on `http://localhost:8000`
+   - Serves the application at `/app/`
 
 Then open your browser to: **http://localhost:8000/app/**
+
+### Requirements for run.sh
+
+Before running `./run.sh`, ensure you have:
+
+- ✅ **Python 3.6+** installed (`python3 --version`)
+- ✅ **pip** available (`pip --version` or `pip3 --version`)
+- ✅ **graphviz** system package installed (for pydot)
+- ✅ **Input files** in project root (only if bundle.json doesn't exist):
+  - `dependency.gv`
+  - `dumpConfig.py`
+
+**That's it!** The script handles everything else.
+
+**For detailed platform-specific installation instructions, see [INSTALL.md](INSTALL.md)**
 
 ## Installation
 
