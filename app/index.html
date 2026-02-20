@@ -33,10 +33,15 @@
                     <label>📊 Dependencies:</label>
                     <span id="selected-module-name" style="color: #ecf0f1; font-weight: 600;">None selected</span>
                     <label for="dep-depth">Depth:</label>
-                    <input type="number" id="dep-depth" min="1" max="10" value="2" style="width: 60px;" />
-                    <button id="dep-show-btn">Show Dependencies</button>
-                    <button id="dep-upstream-btn">Upstream Only</button>
-                    <button id="dep-downstream-btn">Downstream Only</button>
+                    <input type="number" id="dep-depth" min="1" max="10" value="1" style="width: 60px;" />
+                    <button id="dep-paths-btn" title="Direct upstream + downstream paths (no cross-connections)">Paths</button>
+                    <button id="dep-upstream-btn" title="Show only modules this depends on">Upstream</button>
+                    <button id="dep-downstream-btn" title="Show only modules that depend on this">Downstream</button>
+                    <button id="dep-show-btn" title="All edges between nodes in dependency tree (includes cross-connections)">Both</button>
+                    <label style="margin-left: 15px;">
+                        <input type="checkbox" id="auto-deps-toggle" checked style="width: 16px; height: 16px; vertical-align: middle;">
+                        Auto-show on click
+                    </label>
                 </div>
             </div>
 
@@ -183,6 +188,9 @@
 
     <!-- JavaScript Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+
+    <!-- Embedded Bundle Data (for static mode) -->
+    <script src="js/bundle.js"></script>
 
     <!-- Application Scripts -->
     <script src="js/utils.js"></script>

@@ -1,10 +1,18 @@
 /**
  * main.js - Application initialization
  * Loads data and initializes all modules
+ * Supports both static mode (file://) and server mode (http://)
  */
 
 // Global data storage
 window.bundleData = null;
+
+/**
+ * Detect if running in static mode
+ */
+function isStaticMode() {
+    return window.location.protocol === 'file:' || window.EMBEDDED_BUNDLE_DATA !== undefined;
+}
 
 /**
  * Initialize the application
@@ -12,22 +20,38 @@ window.bundleData = null;
 async function initApp() {
     console.log('Initializing CMSSW Graph Visualization...');
 
+    const staticMode = isStaticMode();
+    console.log(`Mode: ${staticMode ? 'Static (file://)' : 'Server (http://)'}`);
+
     try {
         // Show loading indicator
         showLoading(true);
 
-        // Load bundle data
-        const response = await fetch('../data/bundle.json');
-        if (!response.ok) {
-            throw new Error(`Failed to load bundle.json: ${response.statusText}`);
-        }
+        // Load bundle data based on mode
+        if (staticMode && window.EMBEDDED_BUNDLE_DATA) {
+            // Static mode: Use embedded data
+            console.log('Loading embedded bundle data...');
+            window.bundleData = window.EMBEDDED_BUNDLE_DATA;
+            console.log('Embedded bundle data loaded:', {
+                nodes: window.bundleData.nodes.length,
+                edges: window.bundleData.edges.length,
+                modules: Object.keys(window.bundleData.modules).length
+            });
+        } else {
+            // Server mode: Fetch from server
+            console.log('Fetching bundle data from server...');
+            const response = await fetch('../data/bundle.json');
+            if (!response.ok) {
+                throw new Error(`Failed to load bundle.json: ${response.statusText}`);
+            }
 
-        window.bundleData = await response.json();
-        console.log('Bundle data loaded:', {
-            nodes: window.bundleData.nodes.length,
-            edges: window.bundleData.edges.length,
-            modules: Object.keys(window.bundleData.modules).length
-        });
+            window.bundleData = await response.json();
+            console.log('Bundle data loaded from server:', {
+                nodes: window.bundleData.nodes.length,
+                edges: window.bundleData.edges.length,
+                modules: Object.keys(window.bundleData.modules).length
+            });
+        }
 
         // Initialize graph
         GraphManager.init(window.bundleData);
@@ -39,7 +63,17 @@ async function initApp() {
         DependencyExplorer.init();
         KeyboardNav.init();
         FilterManager.init();
-        UploadManager.init();
+
+        // Initialize upload only in server mode
+        if (!staticMode) {
+            UploadManager.init();
+        } else {
+            // Hide upload button in static mode
+            const uploadBtn = document.getElementById('upload-btn');
+            if (uploadBtn) {
+                uploadBtn.style.display = 'none';
+            }
+        }
 
         // Update stats
         updateStats({

@@ -141,15 +141,25 @@ const GraphManager = {
             layout: {
                 name: 'cose',
                 animate: false,
-                nodeRepulsion: 800000,
-                idealEdgeLength: 250,
-                edgeElasticity: 100,
+                // Very tight spring-based physics
+                nodeRepulsion: 200000,        // Lower repulsion - nodes can get very close
+                idealEdgeLength: 40,          // Very short edges - tight connections
+                edgeElasticity: 2000,         // Very strong spring pull
                 nestingFactor: 1.2,
-                gravity: 1,
-                numIter: 1000,
-                initialTemp: 200,
+                gravity: 80,                  // Strong gravity - pulls everything together
+                // Iterations for better clustering
+                numIter: 2500,                // More iterations for tight packing
+                initialTemp: 600,             // Higher initial temp for exploration
                 coolingFactor: 0.95,
-                minTemp: 1.0
+                minTemp: 1.0,
+                // Component spacing
+                componentSpacing: 80,         // Components closer together
+                // Better spring physics
+                nodeOverlap: 10,              // Allow tighter packing
+                refresh: 20,
+                fit: true,
+                padding: 30,
+                randomize: false
             },
 
             minZoom: 0.1,
@@ -171,7 +181,7 @@ const GraphManager = {
      * Setup event handlers for graph interactions
      */
     setupEventHandlers() {
-        // Node click - open panel
+        // Node click - open panel and show dependencies
         this.cy.on('tap', 'node', (evt) => {
             const node = evt.target;
             const moduleId = node.id();
@@ -179,6 +189,11 @@ const GraphManager = {
 
             console.log('Node clicked:', label);
             PanelManager.open(label, moduleId);
+
+            // Auto-show dependencies (upstream + downstream)
+            if (DependencyExplorer && DependencyExplorer.autoShowOnClick) {
+                DependencyExplorer.showForNode(node);
+            }
         });
 
         // Node hover - show tooltip

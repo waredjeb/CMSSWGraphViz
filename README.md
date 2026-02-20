@@ -62,6 +62,31 @@ Place these files in the project root directory:
 
 **Note:** If you already have `data/bundle.json`, these files are optional (the app will use the existing bundle).
 
+## Two Ways to Use
+
+### 📁 Static Mode (No Server - Easiest!)
+
+Just open the HTML file in your browser - no installation needed!
+
+```bash
+# One-time setup
+python preprocess/build_bundle.py
+
+# Then simply open the file
+open app/index.html              # macOS
+xdg-open app/index.html          # Linux
+start app/index.html             # Windows
+# Or just double-click app/index.html
+```
+
+**Perfect for:** Quick viewing, sharing with colleagues, presentations
+
+**See [STATIC_MODE.md](STATIC_MODE.md) for details**
+
+### 🌐 Server Mode (With Upload Feature)
+
+Run with a local server to enable file upload functionality.
+
 ## Quick Start
 
 ### One-Command Setup

@@ -97,6 +97,16 @@ def build_bundle(dot_path, config_path, output_path):
     print(f"  Modules: {bundle['metadata']['module_count']:,}")
     print(f"  Output: {output_path}")
 
+    # Also generate bundle.js for static mode
+    try:
+        from generate_bundle_js import generate_bundle_js
+        js_output = output_path.parent.parent / "app" / "js" / "bundle.js"
+        print(f"\nGenerating bundle.js for static mode...")
+        generate_bundle_js(output_path, js_output)
+    except Exception as e:
+        print(f"\nWarning: Could not generate bundle.js: {e}")
+        print("Run 'python preprocess/generate_bundle_js.py' manually if needed.")
+
 
 def main():
     # Default paths relative to project root

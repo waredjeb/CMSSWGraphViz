@@ -39,6 +39,13 @@ if [ ! -f "data/bundle.json" ]; then
     echo ""
 fi
 
+# Generate bundle.js for static mode
+if [ ! -f "app/js/bundle.js" ] || [ "data/bundle.json" -nt "app/js/bundle.js" ]; then
+    echo "Generating bundle.js for static mode..."
+    python preprocess/generate_bundle_js.py
+    echo ""
+fi
+
 # Start server
 echo ""
 echo "Starting web server..."

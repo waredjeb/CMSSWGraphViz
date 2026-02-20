@@ -6,9 +6,11 @@
 const DependencyExplorer = {
     depthInput: null,
     showBtn: null,
+    pathsBtn: null,
     upstreamBtn: null,
     downstreamBtn: null,
     selectedModuleName: null,
+    autoShowOnClick: true,  // Auto-show dependencies when clicking a node
 
     /**
      * Initialize dependency explorer
@@ -16,6 +18,7 @@ const DependencyExplorer = {
     init() {
         this.depthInput = document.getElementById('dep-depth');
         this.showBtn = document.getElementById('dep-show-btn');
+        this.pathsBtn = document.getElementById('dep-paths-btn');
         this.upstreamBtn = document.getElementById('dep-upstream-btn');
         this.downstreamBtn = document.getElementById('dep-downstream-btn');
         this.selectedModuleName = document.getElementById('selected-module-name');
@@ -27,14 +30,36 @@ const DependencyExplorer = {
      * Setup event listeners
      */
     setupEventListeners() {
-        this.showBtn.addEventListener('click', () => this.show('both'));
+        this.pathsBtn.addEventListener('click', () => this.show('paths'));
         this.upstreamBtn.addEventListener('click', () => this.show('upstream'));
         this.downstreamBtn.addEventListener('click', () => this.show('downstream'));
+        this.showBtn.addEventListener('click', () => this.show('both'));
+
+        // Auto-show toggle
+        const autoToggle = document.getElementById('auto-deps-toggle');
+        if (autoToggle) {
+            autoToggle.addEventListener('change', (e) => {
+                this.autoShowOnClick = e.target.checked;
+                console.log('Auto-show dependencies:', this.autoShowOnClick);
+            });
+        }
 
         // Update selected module name when panel opens
         document.addEventListener('panelOpened', (e) => {
             this.selectedModuleName.textContent = e.detail.moduleName || 'None selected';
         });
+    },
+
+    /**
+     * Show dependencies for a specific node (called when clicking)
+     */
+    showForNode(node) {
+        const depth = parseInt(this.depthInput.value);
+        const direction = 'paths';  // Show direct paths only (no cross-connections)
+
+        console.log(`Auto-showing dependencies for ${node.data('label')} with depth:`, depth);
+
+        this.showDependenciesForNode(node, depth, direction);
     },
 
     /**
@@ -59,7 +84,13 @@ const DependencyExplorer = {
         }
 
         const centerNode = nodes[0];
+        this.showDependenciesForNode(centerNode, depth, direction);
+    },
 
+    /**
+     * Show dependencies for a given node
+     */
+    showDependenciesForNode(centerNode, depth, direction) {
         // Get dependencies
         const dependencies = this.getDependencies(centerNode, depth, direction);
 
@@ -82,13 +113,24 @@ const DependencyExplorer = {
             duration: 500
         });
 
-        console.log(`Showing ${dependencies.nodes.length} nodes in ${direction} dependencies`);
+        console.log(`Showing ${dependencies.nodes.length} nodes in ${direction} dependencies (depth ${depth})`);
     },
 
     /**
      * Get dependencies using BFS
      */
     getDependencies(centerNode, depth, direction) {
+        // For 'paths' mode, get upstream and downstream separately and combine
+        if (direction === 'paths') {
+            const upstream = this.getDependencies(centerNode, depth, 'upstream');
+            const downstream = this.getDependencies(centerNode, depth, 'downstream');
+
+            return {
+                nodes: upstream.nodes.union(downstream.nodes),
+                edges: upstream.edges.union(downstream.edges)
+            };
+        }
+
         const visited = new Set([centerNode.id()]);
         const nodes = GraphManager.cy.collection().union(centerNode);
         const edges = GraphManager.cy.collection();
@@ -108,7 +150,7 @@ const DependencyExplorer = {
                     // Downstream: nodes that depend on this node (successors)
                     neighbors = node.outgoers('node');
                 } else {
-                    // Both directions
+                    // Both directions (includes cross-connections)
                     neighbors = node.neighborhood('node');
                 }
 
@@ -132,6 +174,7 @@ const DependencyExplorer = {
                         return edge.source().id() === node.id() && visited.has(edge.target().id());
                     });
                 } else {
+                    // Both: include ALL edges between visited nodes (cross-connections)
                     connectedEdges = node.connectedEdges().filter(edge => {
                         return visited.has(edge.source().id()) && visited.has(edge.target().id());
                     });
